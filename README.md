@@ -81,3 +81,20 @@ JSON format:
   "Sheet2": [["X1"]]
 }
 ```
+
+## Extracting and Validating Headers
+
+You can validate and extract a header row (first row) from a sheet using `ExtractHeader`:
+
+```go
+rows, err := client.ReadSheet(ctx, "Events")
+if err != nil {
+	log.Fatal(err)
+}
+
+headerIdx, err := googlesheetswrapper.ExtractHeader(rows, []string{"DATE", "NAME"}, false)
+if err != nil {
+	log.Fatalf("invalid header: %v", err)
+}
+// headerIdx["DATE"] == 0, headerIdx["NAME"] == 1
+```

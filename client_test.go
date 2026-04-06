@@ -183,3 +183,56 @@ func TestNewMockFromJSONFile(t *testing.T) {
 		t.Fatalf("unexpected rows: %#v", rows)
 	}
 }
+
+func TestExtractHeaderOK(t *testing.T) {
+	data := [][]string{{"A", "B", "C"}, {"1", "2", "3"}}
+
+	// exact match
+	idx, err := ExtractHeader(data, []string{"A", "B", "C"}, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if idx["A"] != 0 || idx["B"] != 1 || idx["C"] != 2 {
+		t.Fatalf("wrong indices: %#v", idx)
+	}
+
+	// subset of required, extras allowed
+	idx, err = ExtractHeader(data, []string{"A", "B"}, true)
+	if err != nil {
+		t.Fatalf("unexpected error with allowExtra=true: %v", err)
+	}
+	if idx["C"] != 2 {
+		t.Fatalf("extra column missing from returned map: %#v", idx)
+	}
+}
+
+func TestExtractHeaderEmptySheet(t *testing.T) {
+	_, err := ExtractHeader(nil, []string{"A"}, true)
+	if !errors.Is(err, ErrEmptySheet) {
+		t.Fatalf("expected ErrEmptySheet, got: %v", err)
+	}
+}
+
+func TestExtractHeaderDuplicate(t *testing.T) {
+	data := [][]string{{"A", "B", "A"}}
+	_, err := ExtractHeader(data, []string{"A", "B"}, true)
+	if err == nil {
+		t.Fatal("expected error for duplicate column")
+	}
+}
+
+func TestExtractHeaderMissingRequired(t *testing.T) {
+	data := [][]string{{"A", "B"}}
+	_, err := ExtractHeader(data, []string{"A", "B", "C"}, true)
+	if err == nil {
+		t.Fatal("expected error for missing required column")
+	}
+}
+
+func TestExtractHeaderExtraForbidden(t *testing.T) {
+	data := [][]string{{"A", "B", "C"}}
+	_, err := ExtractHeader(data, []string{"A", "B"}, false)
+	if err == nil {
+		t.Fatal("expected error for unexpected column when allowExtra=false")
+	}
+}
